@@ -1,7 +1,4 @@
 import { ApifyClient } from "apify-client";
-import "proxy-agent";
-
-// apify-client 내부 동적 require("proxy-agent")가 서버 번들 트레이싱에서 누락되는 경우를 방지
 
 /** junglee 액터: Input에 maxReviews=100이어도 Run당 ~10건만 주는 사례 있음(점검·과금 모델). 교체 시 APIFY_REVIEWS_ACTOR_ID 사용 */
 export const DEFAULT_REVIEWS_ACTOR_ID = "junglee/amazon-reviews-scraper";
