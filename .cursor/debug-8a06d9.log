@@ -1,0 +1,1 @@
+{"sessionId":"8a06d9","runId":"terminal-ndjson","hypothesisId":"A","location":"send/route.ts:POST:gmail-init-error","message":"Gmail transport init failed","data":{"invalidAppPassLength":true,"passLenAfterNormalize":15,"envPassSet":true,"envUserSet":true},"timestamp":1774362161060}

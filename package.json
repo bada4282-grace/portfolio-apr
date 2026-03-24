@@ -9,13 +9,28 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.41",
+    "@ai-sdk/react": "^3.0.118",
+    "@fontsource/noto-sans-kr": "^5.2.9",
+    "@react-pdf/renderer": "^4.3.2",
+    "@supabase/supabase-js": "^2.99.2",
+    "ai": "^6.0.116",
+    "apify-client": "^2.22.2",
+    "deepl-node": "^1.24.0",
+    "franc": "^6.2.0",
+    "lucide-react": "^0.577.0",
     "next": "16.2.0",
+    "node-html-parser": "^7.1.0",
+    "nodemailer": "^8.0.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.0",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
