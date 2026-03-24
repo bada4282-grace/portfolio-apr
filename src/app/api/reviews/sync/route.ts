@@ -6,6 +6,32 @@ import {
   getApifyToken,
 } from "@/lib/apify";
 
+function extractApifyErrorMeta(err: unknown): {
+  name: string;
+  message: string;
+  statusCode: number | null;
+  type: string | null;
+  code: string | null;
+} {
+  if (!err || typeof err !== "object") {
+    return {
+      name: "UnknownError",
+      message: typeof err === "string" ? err : "Unknown error",
+      statusCode: null,
+      type: null,
+      code: null,
+    };
+  }
+  const e = err as Record<string, unknown>;
+  return {
+    name: typeof e.name === "string" ? e.name : "Error",
+    message: typeof e.message === "string" ? e.message : "Unknown error",
+    statusCode: typeof e.statusCode === "number" ? e.statusCode : null,
+    type: typeof e.type === "string" ? e.type : null,
+    code: typeof e.code === "string" ? e.code : null,
+  };
+}
+
 export async function POST() {
   const token = getApifyToken();
 
@@ -84,6 +110,32 @@ export async function POST() {
       : undefined;
 
     const actorId = getReviewsActorId();
+    // #region agent log
+    {
+      const payload = {
+        sessionId: "8a06d9",
+        runId: "reviews-sync-pre-call",
+        hypothesisId: "A",
+        location: "api/reviews/sync/route.ts:POST:before-call",
+        message: "Starting Apify actor call",
+        data: {
+          actorId,
+          productUrlsCount: productUrls.length,
+          waitSecs,
+          runMaxItems,
+          hasMaxTotalChargeUsd: maxTotalChargeUsd != null && !Number.isNaN(maxTotalChargeUsd),
+          useResidentialProxy: process.env.APIFY_USE_RESIDENTIAL_PROXY === "true",
+          maxReviewsMode: maxEnv ?? "default",
+        },
+        timestamp: Date.now(),
+      };
+      fetch("http://127.0.0.1:7941/ingest/0fffd798-6878-4afb-8f04-8b34eb04beba", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a06d9" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }
+    // #endregion
     const run = await apifyClient.actor(actorId).call(input, {
       waitSecs,
       maxItems: runMaxItems,
@@ -91,6 +143,30 @@ export async function POST() {
         ? { maxTotalChargeUsd }
         : {}),
     });
+
+    // #region agent log
+    {
+      const payload = {
+        sessionId: "8a06d9",
+        runId: "reviews-sync-post-call",
+        hypothesisId: "B",
+        location: "api/reviews/sync/route.ts:POST:after-call",
+        message: "Apify actor call succeeded",
+        data: {
+          actorId,
+          runId: run.id,
+          datasetId: run.defaultDatasetId ?? null,
+          status: run.status ?? null,
+        },
+        timestamp: Date.now(),
+      };
+      fetch("http://127.0.0.1:7941/ingest/0fffd798-6878-4afb-8f04-8b34eb04beba", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a06d9" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }
+    // #endregion
 
     const perProductNote =
       input.maxReviews != null
@@ -108,8 +184,33 @@ export async function POST() {
     });
   } catch (err) {
     console.error("Apify 실행 오류:", err);
+    const meta = extractApifyErrorMeta(err);
+    // #region agent log
+    {
+      const payload = {
+        sessionId: "8a06d9",
+        runId: "reviews-sync-catch",
+        hypothesisId: "C",
+        location: "api/reviews/sync/route.ts:POST:catch",
+        message: "Apify actor call failed",
+        data: {
+          ...meta,
+          actorId: getReviewsActorId(),
+        },
+        timestamp: Date.now(),
+      };
+      fetch("http://127.0.0.1:7941/ingest/0fffd798-6878-4afb-8f04-8b34eb04beba", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a06d9" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }
+    // #endregion
     return NextResponse.json(
-      { error: "리뷰 수집 중 오류가 발생했습니다." },
+      {
+        error: "리뷰 수집 중 오류가 발생했습니다.",
+        debug: meta,
+      },
       { status: 500 }
     );
   }
