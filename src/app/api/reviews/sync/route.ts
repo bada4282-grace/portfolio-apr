@@ -6,6 +6,8 @@ import {
   getApifyToken,
 } from "@/lib/apify";
 
+export const runtime = "nodejs";
+
 function extractApifyErrorMeta(err: unknown): {
   name: string;
   message: string;
