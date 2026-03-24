@@ -85,7 +85,7 @@
 아래는 현재 코드 기준으로 사용하는 변수들입니다.
 
 ### 필수
-- `APIFY_API_TOKEN` : Apify API 토큰 (리뷰 기능 필수)
+- `NEXT_PUBLIC_APIFY_API_TOKEN` : Apify API 토큰 (리뷰 기능 필수)
 - `OPENAI_API_KEY` : OpenAI API 키 (정책 분류 + 리포트 필수)
 - `DEEPL_API_KEY` : DeepL API 키 (정책 번역 필수)
 - `GMAIL_USER` : Gmail SMTP 발신 계정(전체 이메일)
@@ -118,7 +118,7 @@
 예시:
 
 ```bash
-APIFY_API_TOKEN=apify_xxx
+NEXT_PUBLIC_APIFY_API_TOKEN=apify_xxx
 OPENAI_API_KEY=sk-xxx
 DEEPL_API_KEY=xxx:fx
 GMAIL_USER=you@gmail.com

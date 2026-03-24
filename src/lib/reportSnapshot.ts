@@ -38,9 +38,9 @@ const MAX_TEXT = 220;
 export async function fetchReviewsSnapshotForReport(
   maxSamples = 45
 ): Promise<ReviewsSnapshot> {
-  const token = process.env.APIFY_API_TOKEN?.trim();
+  const token = process.env.NEXT_PUBLIC_APIFY_API_TOKEN?.trim();
   if (!token) {
-    return { ok: false, error: "APIFY_API_TOKEN이 설정되지 않았습니다." };
+    return { ok: false, error: "NEXT_PUBLIC_APIFY_API_TOKEN이 설정되지 않았습니다." };
   }
 
   let datasetId: string | null;

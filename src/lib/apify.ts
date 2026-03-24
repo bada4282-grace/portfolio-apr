@@ -7,7 +7,7 @@ export const DEFAULT_REVIEWS_ACTOR_ID = "junglee/amazon-reviews-scraper";
 export const ACTOR_ID = DEFAULT_REVIEWS_ACTOR_ID;
 
 export const apifyClient = new ApifyClient({
-  token: process.env.APIFY_API_TOKEN ?? "",
+  token: process.env.NEXT_PUBLIC_APIFY_API_TOKEN ?? "",
 });
 
 /** 리뷰 수집·lastRun 조회에 쓰는 Store 액터 ID */

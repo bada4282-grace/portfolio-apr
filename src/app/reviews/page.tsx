@@ -468,7 +468,7 @@ export default function ReviewsPage() {
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>
             데이터를 불러올 수 없습니다.{" "}
-            <code className="rounded bg-red-100 px-1">APIFY_API_TOKEN</code>과
+            <code className="rounded bg-red-100 px-1">NEXT_PUBLIC_APIFY_API_TOKEN</code>과
             수집 실행 여부를 확인하세요. (Dataset은 최근 성공 Run에서 자동 조회)
           </span>
         </div>

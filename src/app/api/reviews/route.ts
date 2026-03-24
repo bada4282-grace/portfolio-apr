@@ -10,11 +10,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const token = process.env.APIFY_API_TOKEN;
+  const token = process.env.NEXT_PUBLIC_APIFY_API_TOKEN;
 
   if (!token) {
     return NextResponse.json(
-      { error: "APIFY_API_TOKEN이 설정되지 않았습니다." },
+      { error: "NEXT_PUBLIC_APIFY_API_TOKEN이 설정되지 않았습니다." },
       { status: 503 }
     );
   }
