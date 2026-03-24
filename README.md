@@ -6,6 +6,8 @@
 - `정책·뉴스`: 페이지 진입 시 자동으로 최신 뉴스 수집 실행 
 - `리뷰 분석`: 제품 선택 시 해당 제품 ASIN으로 Apify를 재호출해 최신 리뷰 조회
 - `리뷰 분석`: 카테고리 필터에서 `전체` 제거 (실제 카테고리만 선택)
+- `AI 리포트`: `메일 초안`/`구조화 리포트` 선택 후 한·영 전환 지원
+- `리포트 PDF`: 화면 렌더 결과 그대로 브라우저 인쇄로 저장
 
 ---
 
@@ -26,10 +28,22 @@
   - 최신순 정렬 후 최대 N건 반환 (기본 10건)
 - 국가/카테고리/제품/감성 필터 + 지표 + 차트 + 리뷰 목록 동기화
 
-### 1-3. AI 리포트 생성 (`/report`)
-- `POST /api/chat` 스트리밍 기반 응답
-- 한국어/영어 템플릿 프롬프트 제공
-- 아마존/틱톡샵 운영팀 공유용 요약 리포트 생성
+### 1-3. AI 리포트 (`/report`)
+- 워크플로우 2종 제공
+  - `플랫폼 동향 메일 초안`: 수신자/제목/본문 편집 후 Gmail SMTP 발송
+  - `플랫폼 동향 리포트`: 구조화 리포트(요약·트렌드·플레이어·차트·뉴스) 생성
+- 한국어/영어 전환 지원
+- 리포트 PDF는 서버 재렌더링이 아닌 **브라우저 인쇄 기반(화면 그대로 저장)** 방식
+
+### 1-4. 주요 사용자 흐름 (`/report`)
+- Step 1) 리포트 유형 선택: `플랫폼 동향 메일 초안` 또는 `플랫폼 동향 리포트`
+- Step 2) 언어 선택: `한국어` / `English`
+- Step 3-A) 메일 초안 경로
+  - `POST /api/report/email-draft/generate`로 제목/본문 생성
+  - 수신자 입력 후 `POST /api/report/email-draft/send`로 Gmail SMTP 발송
+- Step 3-B) 구조화 리포트 경로
+  - `POST /api/report/structured`로 리포트 생성
+  - `PDF 다운로드` 버튼 클릭 시 인쇄 창에서 `PDF로 저장`으로 내보내기
 
 ---
 
@@ -59,7 +73,10 @@
 - `GET /api/reviews` : 리뷰 데이터셋 조회 및 집계
 - `POST /api/reviews/sync` : 전체 제품 리뷰 일괄 수집(내부/운영용)
 - `POST /api/reviews/product` : 단일 제품(ASIN) 리뷰 재수집
-- `POST /api/chat` : AI 리포트 스트리밍
+- `POST /api/chat/report` : 리포트 보조 채팅 스트리밍
+- `POST /api/report/email-draft/generate` : 메일 초안 생성
+- `POST /api/report/email-draft/send` : Gmail SMTP 발송
+- `POST /api/report/structured` : 구조화 리포트 생성
 
 ---
 
@@ -71,6 +88,8 @@
 - `APIFY_API_TOKEN` : Apify API 토큰 (리뷰 기능 필수)
 - `OPENAI_API_KEY` : OpenAI API 키 (정책 분류 + 리포트 필수)
 - `DEEPL_API_KEY` : DeepL API 키 (정책 번역 필수)
+- `GMAIL_USER` : Gmail SMTP 발신 계정(전체 이메일)
+- `GMAIL_APP_PASS` : Gmail 앱 비밀번호(공백/따옴표 없이 16자)
 
 ### 리뷰 수집 관련 (선택)
 - `APIFY_REVIEWS_ACTOR_ID`
@@ -102,6 +121,8 @@
 APIFY_API_TOKEN=apify_xxx
 OPENAI_API_KEY=sk-xxx
 DEEPL_API_KEY=xxx:fx
+GMAIL_USER=you@gmail.com
+GMAIL_APP_PASS=xxxxxxxxxxxxxxxx
 
 APIFY_REVIEWS_ACTOR_ID=junglee/amazon-reviews-scraper
 APIFY_WAIT_SECS=600
@@ -120,6 +141,9 @@ npm run dev
 ```
 
 브라우저에서 `http://localhost:3000` 접속
+
+`/report`에서 PDF를 받을 때는 브라우저 인쇄 창이 열리며,
+`대상(프린터)`을 `PDF로 저장`으로 선택해야 파일로 저장됩니다.
 
 검증 명령:
 
@@ -152,6 +176,13 @@ npm run lint
 - 국가 선택 시 해당 국가의 첫 카테고리를 자동 선택
 - 제품은 `전체` 또는 특정 제품 선택 가능
 
+### 6-4. 리포트 PDF 저장 방식
+- 기존: 서버에서 텍스트 기반 PDF 재생성 (`/api/report/pdf`)
+- 현재: `/report` 화면의 구조화 리포트를 브라우저 인쇄로 저장
+  - 인쇄 시 `#printable-structured-report` 영역만 출력
+  - 한글 깨짐(폰트/인코딩) 이슈를 회피
+  - 브라우저 인쇄 창에서 `PDF로 저장` 선택 (화면 레이아웃 유지)
+
 ---
 
 ## 7) 운영/비용 주의사항
@@ -182,6 +213,15 @@ npm run lint
   - 단일 제품 API 기본 상한이 10 (`APIFY_PRODUCT_SELECT_MAX_REVIEWS`)
 - 해결:
   - `.env.local`에서 상한 값을 올리고 재시작
+
+### Q3. 메일 발송이 535(EAUTH)로 실패합니다.
+- 원인:
+  - Gmail이 인증 조합(USER + 앱 비밀번호)을 거부
+  - 앱 비밀번호 오입력/복사 오류, 발급 계정 불일치, Workspace 정책 차단 가능
+- 해결:
+  - `GMAIL_APP_PASS`가 정규화 후 16자인지 확인
+  - `GMAIL_USER`가 앱 비밀번호를 발급한 동일 Google 계정인지 확인
+  - 앱 비밀번호를 재발급 후 `.env.local` 갱신, 개발 서버 재시작
 
 ---
 
