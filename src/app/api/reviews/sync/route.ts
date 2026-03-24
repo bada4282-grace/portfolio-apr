@@ -1,12 +1,83 @@
 import { NextResponse } from "next/server";
 import {
-  apifyClient,
   buildProductUrlListForScraper,
   getReviewsActorId,
   getApifyToken,
 } from "@/lib/apify";
 
 export const runtime = "nodejs";
+
+interface ApifyRunData {
+  id: string;
+  defaultDatasetId?: string;
+  status?: string;
+}
+
+function buildApifyRunUrl(params: {
+  actorId: string;
+  token: string;
+  waitSecs: number;
+  maxItems: number;
+  maxTotalChargeUsd?: number;
+}): string {
+  const url = new URL(
+    `https://api.apify.com/v2/acts/${encodeURIComponent(params.actorId)}/runs`
+  );
+  url.searchParams.set("token", params.token);
+  url.searchParams.set("waitForFinish", String(params.waitSecs));
+  url.searchParams.set("maxItems", String(params.maxItems));
+  if (
+    params.maxTotalChargeUsd != null &&
+    Number.isFinite(params.maxTotalChargeUsd)
+  ) {
+    url.searchParams.set("maxTotalChargeUsd", String(params.maxTotalChargeUsd));
+  }
+  return url.toString();
+}
+
+async function callApifyActorViaHttp(args: {
+  actorId: string;
+  token: string;
+  input: {
+    productUrls: { url: string }[];
+    proxy: { useApifyProxy: boolean; apifyProxyGroups?: string[] };
+    sort: "recent" | "helpful";
+    maxReviews?: number;
+  };
+  waitSecs: number;
+  maxItems: number;
+  maxTotalChargeUsd?: number;
+}): Promise<ApifyRunData> {
+  const endpoint = buildApifyRunUrl({
+    actorId: args.actorId,
+    token: args.token,
+    waitSecs: args.waitSecs,
+    maxItems: args.maxItems,
+    maxTotalChargeUsd: args.maxTotalChargeUsd,
+  });
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(args.input),
+  });
+
+  const payload = (await res.json().catch(() => null)) as
+    | {
+        data?: ApifyRunData;
+        error?: { message?: string; type?: string };
+      }
+    | null;
+
+  if (!res.ok || !payload?.data?.id) {
+    const message =
+      payload?.error?.message ??
+      `Apify HTTP 요청 실패 (${res.status} ${res.statusText})`;
+    throw new Error(message);
+  }
+
+  return payload.data;
+}
 
 function extractApifyErrorMeta(err: unknown): {
   name: string;
@@ -138,7 +209,10 @@ export async function POST() {
       }).catch(() => {});
     }
     // #endregion
-    const run = await apifyClient.actor(actorId).call(input, {
+    const run = await callApifyActorViaHttp({
+      actorId,
+      token,
+      input,
       waitSecs,
       maxItems: runMaxItems,
       ...(maxTotalChargeUsd != null && !Number.isNaN(maxTotalChargeUsd)
