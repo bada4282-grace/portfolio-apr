@@ -6,6 +6,7 @@ import {
   buildAmazonDpUrl,
   scrapeReviewsForSingleProductUrl,
   extractAsinFromApifyItem,
+  getApifyToken,
 } from "@/lib/apify";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +22,10 @@ function parseMaxReviews(): number {
 
 /** 필터에서 특정 제품 선택 시 해당 ASIN만 Apify로 다시 수집 */
 export async function POST(req: Request) {
-  const token = process.env.NEXT_PUBLIC_APIFY_API_TOKEN;
+  const token = getApifyToken();
   if (!token) {
     return NextResponse.json(
-      { error: "NEXT_PUBLIC_APIFY_API_TOKEN이 설정되지 않았습니다." },
+      { error: "NEXT_PUBLIC_APIFY_API_TOKEN 또는 APIFY_API_TOKEN이 설정되지 않았습니다." },
       { status: 503 }
     );
   }

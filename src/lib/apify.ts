@@ -6,8 +6,16 @@ export const DEFAULT_REVIEWS_ACTOR_ID = "junglee/amazon-reviews-scraper";
 /** @deprecated sync/resolve에서는 getReviewsActorId() 사용 */
 export const ACTOR_ID = DEFAULT_REVIEWS_ACTOR_ID;
 
+export function getApifyToken(): string {
+  const nextPublic = process.env.NEXT_PUBLIC_APIFY_API_TOKEN?.trim();
+  if (nextPublic) return nextPublic;
+  const legacy = process.env.APIFY_API_TOKEN?.trim();
+  if (legacy) return legacy;
+  return "";
+}
+
 export const apifyClient = new ApifyClient({
-  token: process.env.NEXT_PUBLIC_APIFY_API_TOKEN ?? "",
+  token: getApifyToken(),
 });
 
 /** 리뷰 수집·lastRun 조회에 쓰는 Store 액터 ID */

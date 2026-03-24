@@ -3,6 +3,7 @@ import {
   fetchDatasetItemsPaginated,
   toReviewItems,
   aggregateByChannel,
+  getApifyToken,
 } from "@/lib/apify";
 import type { ReviewSummary } from "@/lib/apify";
 
@@ -38,9 +39,9 @@ const MAX_TEXT = 220;
 export async function fetchReviewsSnapshotForReport(
   maxSamples = 45
 ): Promise<ReviewsSnapshot> {
-  const token = process.env.NEXT_PUBLIC_APIFY_API_TOKEN?.trim();
+  const token = getApifyToken();
   if (!token) {
-    return { ok: false, error: "NEXT_PUBLIC_APIFY_API_TOKEN이 설정되지 않았습니다." };
+    return { ok: false, error: "NEXT_PUBLIC_APIFY_API_TOKEN 또는 APIFY_API_TOKEN이 설정되지 않았습니다." };
   }
 
   let datasetId: string | null;

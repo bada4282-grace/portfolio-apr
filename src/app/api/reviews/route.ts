@@ -4,17 +4,18 @@ import {
   toReviewItems,
   resolveReviewDatasetId,
   fetchDatasetItemsPaginated,
+  getApifyToken,
 } from "@/lib/apify";
 
 // 리뷰는 수집 직후 갱신되어야 하므로 정적/캐시 최적화 비활성화
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const token = process.env.NEXT_PUBLIC_APIFY_API_TOKEN;
+  const token = getApifyToken();
 
   if (!token) {
     return NextResponse.json(
-      { error: "NEXT_PUBLIC_APIFY_API_TOKEN이 설정되지 않았습니다." },
+      { error: "NEXT_PUBLIC_APIFY_API_TOKEN 또는 APIFY_API_TOKEN이 설정되지 않았습니다." },
       { status: 503 }
     );
   }
