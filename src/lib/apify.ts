@@ -1,5 +1,3 @@
-import { ApifyClient } from "apify-client";
-
 /** junglee 액터: Input에 maxReviews=100이어도 Run당 ~10건만 주는 사례 있음(점검·과금 모델). 교체 시 APIFY_REVIEWS_ACTOR_ID 사용 */
 export const DEFAULT_REVIEWS_ACTOR_ID = "junglee/amazon-reviews-scraper";
 
@@ -14,14 +12,80 @@ export function getApifyToken(): string {
   return "";
 }
 
-export const apifyClient = new ApifyClient({
-  token: getApifyToken(),
-});
-
 /** 리뷰 수집·lastRun 조회에 쓰는 Store 액터 ID */
 export function getReviewsActorId(): string {
   const v = process.env.APIFY_REVIEWS_ACTOR_ID?.trim();
   return v && v.length > 0 ? v : DEFAULT_REVIEWS_ACTOR_ID;
+}
+
+/** Apify REST Run 응답의 data 객체 */
+export interface ApifyRunRestData {
+  id: string;
+  defaultDatasetId?: string;
+  status?: string;
+}
+
+/** 액터 실행 POST URL (sync·단일 제품 수집 공통) */
+export function buildApifyRunUrl(params: {
+  actorId: string;
+  token: string;
+  waitSecs: number;
+  maxItems: number;
+  maxTotalChargeUsd?: number;
+}): string {
+  const url = new URL(
+    `https://api.apify.com/v2/acts/${encodeURIComponent(params.actorId)}/runs`
+  );
+  url.searchParams.set("token", params.token);
+  url.searchParams.set("waitForFinish", String(params.waitSecs));
+  url.searchParams.set("maxItems", String(params.maxItems));
+  if (
+    params.maxTotalChargeUsd != null &&
+    Number.isFinite(params.maxTotalChargeUsd)
+  ) {
+    url.searchParams.set("maxTotalChargeUsd", String(params.maxTotalChargeUsd));
+  }
+  return url.toString();
+}
+
+/** apify-client 대신 REST — Vercel에서 proxy-agent 로딩 이슈 회피 */
+export async function callApifyActorViaHttp(args: {
+  actorId: string;
+  token: string;
+  input: object;
+  waitSecs: number;
+  maxItems: number;
+  maxTotalChargeUsd?: number;
+}): Promise<ApifyRunRestData> {
+  const endpoint = buildApifyRunUrl({
+    actorId: args.actorId,
+    token: args.token,
+    waitSecs: args.waitSecs,
+    maxItems: args.maxItems,
+    maxTotalChargeUsd: args.maxTotalChargeUsd,
+  });
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(args.input),
+  });
+
+  const payload = (await res.json().catch(() => null)) as
+    | {
+        data?: ApifyRunRestData;
+        error?: { message?: string; type?: string };
+      }
+    | null;
+
+  if (!res.ok || !payload?.data?.id) {
+    const message =
+      payload?.error?.message ??
+      `Apify HTTP 요청 실패 (${res.status} ${res.statusText})`;
+    throw new Error(message);
+  }
+
+  return payload.data;
 }
 
 /**
@@ -33,12 +97,23 @@ export async function resolveReviewDatasetId(): Promise<string | null> {
   const pinned = process.env.APIFY_DATASET_ID?.trim();
   if (pinned) return pinned;
 
-  const run = await apifyClient
-    .actor(getReviewsActorId())
-    .lastRun({ status: "SUCCEEDED" })
-    .get();
+  const token = getApifyToken();
+  if (!token) return null;
 
-  const id = run?.defaultDatasetId;
+  const actorId = getReviewsActorId();
+  const url = new URL(
+    `https://api.apify.com/v2/acts/${encodeURIComponent(actorId)}/runs/last`
+  );
+  url.searchParams.set("token", token);
+  url.searchParams.set("status", "SUCCEEDED");
+
+  const res = await fetch(url.toString());
+  if (!res.ok) return null;
+
+  const payload = (await res.json().catch(() => null)) as
+    | { data?: { defaultDatasetId?: string } }
+    | null;
+  const id = payload?.data?.defaultDatasetId;
   return typeof id === "string" && id.length > 0 ? id : null;
 }
 
@@ -257,8 +332,16 @@ export async function scrapeReviewsForSingleProductUrl(
     ? Math.min(Math.max(0.5, parseFloat(chargeRaw)), 500)
     : undefined;
 
+  const token = getApifyToken();
+  if (!token) {
+    throw new Error("Apify 토큰이 없습니다.");
+  }
+
   const actorId = getReviewsActorId();
-  const run = await apifyClient.actor(actorId).call(input, {
+  const run = await callApifyActorViaHttp({
+    actorId,
+    token,
+    input,
     waitSecs,
     maxItems: runMaxItems,
     ...(maxTotalChargeUsd != null && !Number.isNaN(maxTotalChargeUsd)
@@ -313,17 +396,37 @@ const DATASET_PAGE_SIZE = 1000;
 export async function fetchDatasetItemsPaginated(
   datasetId: string
 ): Promise<ApifyReviewItem[]> {
+  const token = getApifyToken();
+  if (!token) {
+    throw new Error("Apify 토큰이 없습니다.");
+  }
+
   const all: ApifyReviewItem[] = [];
   let offset = 0;
 
   while (all.length < REVIEW_DATASET_MAX_ITEMS) {
     const take = Math.min(DATASET_PAGE_SIZE, REVIEW_DATASET_MAX_ITEMS - all.length);
-    const page = await apifyClient.dataset(datasetId).listItems({
-      limit: take,
-      offset,
-    });
-    const batch = page.items as ApifyReviewItem[];
-    if (batch.length === 0) break;
+    const url = new URL(
+      `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items`
+    );
+    url.searchParams.set("token", token);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("clean", "true");
+    url.searchParams.set("offset", String(offset));
+    url.searchParams.set("limit", String(take));
+
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+      const err = new Error(
+        `Dataset items 조회 실패 (${res.status} ${res.statusText})`
+      ) as Error & { statusCode?: number };
+      err.statusCode = res.status;
+      throw err;
+    }
+
+    const batchUnknown = (await res.json()) as unknown;
+    if (!Array.isArray(batchUnknown) || batchUnknown.length === 0) break;
+    const batch = batchUnknown as ApifyReviewItem[];
     all.push(...batch);
     if (batch.length < take) break;
     offset += batch.length;

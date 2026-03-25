@@ -9,6 +9,7 @@ import {
 
 // 리뷰는 수집 직후 갱신되어야 하므로 정적/캐시 최적화 비활성화
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET() {
   const token = getApifyToken();

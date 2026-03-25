@@ -10,6 +10,7 @@ import {
 } from "@/lib/apify";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 function parseMaxReviews(): number {
   const raw = process.env.APIFY_PRODUCT_SELECT_MAX_REVIEWS?.trim();
