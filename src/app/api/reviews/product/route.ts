@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import {
-  aggregateByChannel,
+  aggregateBySelectedChannel,
   toReviewItems,
   resolveProductAsin,
   buildAmazonDpUrl,
   scrapeReviewsForSingleProductUrl,
   extractAsinFromApifyItem,
   getApifyToken,
+  type ChannelKey,
 } from "@/lib/apify";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 function parseMaxReviews(): number {
   const raw = process.env.APIFY_PRODUCT_SELECT_MAX_REVIEWS?.trim();
@@ -87,14 +89,16 @@ export async function POST(req: Request) {
       maxReviews
     );
 
-    // 액터 결과에 타 상품이 섞여도 요청 ASIN만 남겨 제품 전환 시 결과가 확실히 달라지게 함
+    // ASIN 일치 행만 쓰되, 그 행들에 본문 필드가 없어 전부 탈락하면 전체 행으로 폴백(0건 유령 방지)
     const onlyRequestedAsinItems = items.filter(
       (item) => extractAsinFromApifyItem(item) === asin
     );
-    const targetItems =
-      onlyRequestedAsinItems.length > 0 ? onlyRequestedAsinItems : items;
-
-    let reviews = toReviewItems(targetItems);
+    let reviews = toReviewItems(
+      onlyRequestedAsinItems.length > 0 ? onlyRequestedAsinItems : items
+    );
+    if (reviews.length === 0 && onlyRequestedAsinItems.length > 0) {
+      reviews = toReviewItems(items);
+    }
     reviews.sort((a, b) => {
       if (b.reviewedAtMs !== a.reviewedAtMs) {
         return b.reviewedAtMs - a.reviewedAtMs;
@@ -103,7 +107,7 @@ export async function POST(req: Request) {
     });
     reviews = reviews.slice(0, maxReviews);
 
-    const chartData = aggregateByChannel(reviews);
+    const chartData = aggregateBySelectedChannel(reviews, channel as ChannelKey);
     const total = reviews.length;
     const positiveCount = reviews.filter((r) => r.sentiment === "positive").length;
     const avgRating =

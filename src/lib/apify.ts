@@ -439,7 +439,8 @@ export async function fetchDatasetItemsPaginated(
       `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items`
     );
     url.searchParams.set("format", "json");
-    url.searchParams.set("clean", "true");
+    // clean=true 시 일부 액터 필드가 과도하게 정리되어 본문이 비는 사례가 있어 false 유지
+    url.searchParams.set("clean", "false");
     url.searchParams.set("offset", String(offset));
     url.searchParams.set("limit", String(take));
 
@@ -642,6 +643,34 @@ export function extractAsinFromApifyItem(item: ApifyReviewItem): string {
   return extractAsinFromAmazonUrl(item.url ?? item.reviewUrl ?? "");
 }
 
+/** 액터별로 제각각인 본문 필드·중첩 객체에서 리뷰 텍스트 추출 */
+function pickReviewTextFromApifyItem(item: ApifyReviewItem): string {
+  const rec = item as unknown as Record<string, unknown>;
+  const candidates: unknown[] = [
+    item.reviewDescription,
+    item.text,
+    item.reviewText,
+    item.reviewTitle,
+    rec.body,
+    rec.content,
+    rec.comment,
+    rec.reviewComment,
+    rec.fullReview,
+    rec.reviewBody,
+    rec.summary,
+    rec.reviewContent,
+  ];
+  const nested = rec.review;
+  if (nested !== null && typeof nested === "object" && !Array.isArray(nested)) {
+    const nr = nested as Record<string, unknown>;
+    candidates.push(nr.text, nr.body, nr.content, nr.description);
+  }
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+  }
+  return "";
+}
+
 /** Apify 행에서 타임스탬프(ms) 추출 — 없으면 0 */
 function extractReviewedAtMs(item: ApifyReviewItem): number {
   const raw = [
@@ -663,13 +692,8 @@ export function toReviewItems(items: ApifyReviewItem[]): ReviewItem[] {
 
   return items
     .map((item, sourceOrder) => {
-      const text =
-        item.reviewDescription ??
-        item.text ??
-        item.reviewText ??
-        item.reviewTitle ??
-        "";
-      if (!String(text).trim()) return null;
+      const text = pickReviewTextFromApifyItem(item);
+      if (!text) return null;
 
       const ratingRaw =
         item.rating ?? item.ratingValue ?? item.ratingScore ?? 3;
