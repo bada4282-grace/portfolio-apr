@@ -48,7 +48,7 @@ export default function Home() {
         </h1>
         {/* \n 줄바꿈 표시를 위해 whitespace-pre-line */}
         <p className="mx-auto max-w-xl whitespace-pre-line text-base leading-relaxed text-zinc-500">
-          {`글로벌 이커머스 운영 담당자를 위한 올인원 대시보드.
+          {`글로벌 이커머스 플랫폼 운영지원 담당자를 위한 올인원 대시보드.
 정책 변경 모니터링 · 유럽 VOC 분석 · AI 리포트를 한 곳에서 관리하세요`}
         </p>
       </section>
