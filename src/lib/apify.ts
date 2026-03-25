@@ -18,6 +18,11 @@ export function getReviewsActorId(): string {
   return v && v.length > 0 ? v : DEFAULT_REVIEWS_ACTOR_ID;
 }
 
+/** Apify REST 경로용 액터 ID — 문서 권장 `username~actor` (slash만 tilde로 통일) */
+export function apifyActorIdForRestPath(actorId: string): string {
+  return actorId.replace(/\//g, "~");
+}
+
 /** Apify REST Run 응답의 data 객체 */
 export interface ApifyRunRestData {
   id: string;
@@ -28,15 +33,12 @@ export interface ApifyRunRestData {
 /** 액터 실행 POST URL (sync·단일 제품 수집 공통) */
 export function buildApifyRunUrl(params: {
   actorId: string;
-  token: string;
   waitSecs: number;
   maxItems: number;
   maxTotalChargeUsd?: number;
 }): string {
-  const url = new URL(
-    `https://api.apify.com/v2/acts/${encodeURIComponent(params.actorId)}/runs`
-  );
-  url.searchParams.set("token", params.token);
+  const actSeg = encodeURIComponent(apifyActorIdForRestPath(params.actorId));
+  const url = new URL(`https://api.apify.com/v2/acts/${actSeg}/runs`);
   url.searchParams.set("waitForFinish", String(params.waitSecs));
   url.searchParams.set("maxItems", String(params.maxItems));
   if (
@@ -59,7 +61,6 @@ export async function callApifyActorViaHttp(args: {
 }): Promise<ApifyRunRestData> {
   const endpoint = buildApifyRunUrl({
     actorId: args.actorId,
-    token: args.token,
     waitSecs: args.waitSecs,
     maxItems: args.maxItems,
     maxTotalChargeUsd: args.maxTotalChargeUsd,
@@ -67,7 +68,10 @@ export async function callApifyActorViaHttp(args: {
 
   const res = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${args.token}`,
+    },
     body: JSON.stringify(args.input),
   });
 
@@ -101,20 +105,45 @@ export async function resolveReviewDatasetId(): Promise<string | null> {
   if (!token) return null;
 
   const actorId = getReviewsActorId();
-  const url = new URL(
-    `https://api.apify.com/v2/acts/${encodeURIComponent(actorId)}/runs/last`
-  );
-  url.searchParams.set("token", token);
+  const actSeg = encodeURIComponent(apifyActorIdForRestPath(actorId));
+  const url = new URL(`https://api.apify.com/v2/acts/${actSeg}/runs/last`);
   url.searchParams.set("status", "SUCCEEDED");
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) return null;
 
   const payload = (await res.json().catch(() => null)) as
     | { data?: { defaultDatasetId?: string } }
     | null;
   const id = payload?.data?.defaultDatasetId;
-  return typeof id === "string" && id.length > 0 ? id : null;
+  if (typeof id === "string" && id.length > 0) return id;
+
+  // runs/last가 빈 data를 주는 경우: 최근 Run 목록에서 SUCCEEDED + datasetId 보강
+  const listUrl = new URL(`https://api.apify.com/v2/acts/${actSeg}/runs`);
+  listUrl.searchParams.set("limit", "20");
+  listUrl.searchParams.set("desc", "1");
+  listUrl.searchParams.set("status", "SUCCEEDED");
+
+  const listRes = await fetch(listUrl.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!listRes.ok) return null;
+
+  const listPayload = (await listRes.json().catch(() => null)) as
+    | { data?: { items?: { defaultDatasetId?: string; status?: string }[] } }
+    | null;
+  const items = listPayload?.data?.items;
+  if (!Array.isArray(items)) return null;
+
+  for (const run of items) {
+    if (run.status !== "SUCCEEDED") continue;
+    const ds = run.defaultDatasetId;
+    if (typeof ds === "string" && ds.length > 0) return ds;
+  }
+
+  return null;
 }
 
 // ─────────────────────────────────────────────
@@ -409,13 +438,14 @@ export async function fetchDatasetItemsPaginated(
     const url = new URL(
       `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items`
     );
-    url.searchParams.set("token", token);
     url.searchParams.set("format", "json");
     url.searchParams.set("clean", "true");
     url.searchParams.set("offset", String(offset));
     url.searchParams.set("limit", String(take));
 
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) {
       const err = new Error(
         `Dataset items 조회 실패 (${res.status} ${res.statusText})`
