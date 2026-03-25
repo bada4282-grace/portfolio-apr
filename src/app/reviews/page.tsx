@@ -16,7 +16,7 @@ import {
   CHANNELS,
   PRODUCT_MAP,
   resolveReviewLabels,
-  aggregateByChannel,
+  aggregateBySelectedChannel,
 } from "@/lib/apify";
 import type { ChannelKey, ReviewSummary, ReviewItem } from "@/lib/apify";
 
@@ -318,8 +318,8 @@ export default function ReviewsPage() {
       : "-";
 
   const chartDataForView =
-    showAnalysis
-      ? aggregateByChannel(previewSentimentFiltered)
+    showAnalysis && selectedChannel != null
+      ? aggregateBySelectedChannel(previewSentimentFiltered, selectedChannel)
       : [];
 
   const chartCaptionTotal =

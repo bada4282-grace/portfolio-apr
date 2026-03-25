@@ -23,7 +23,7 @@ function emailDraftSchema(locale: "ko" | "en") {
       body: z
         .string()
         .describe(
-          "Full plain-text email: greeting → bullets from policy/RSS + VOC if data exists → suggested follow-ups → closing. End with exactly two lines: Best regards, then Corporate Support — Amazon/TikTok Shop Operations Team (no other team name). No fabricated numbers."
+          "Plain text ONLY — no Markdown (no **, __, #, code fences). Use blank lines between blocks, [Section Title] lines, '- ' bullets, indented '  - ' sub-bullets, numbered actions 1. 2. Structure: greeting → one-line summary → [Platform & policy] → [Review highlights] if data → [Recommended actions] → Best regards, + Corporate Support — Amazon/TikTok Shop Operations Team. No fabricated numbers."
         ),
     });
   }
@@ -36,7 +36,7 @@ function emailDraftSchema(locale: "ko" | "en") {
     body: z
       .string()
       .describe(
-        "보낼 이메일 본문 전문(plain text). 인사 → RSS·정책·뉴스 요약 불릿 → (가능하면) VOC 한 줄 → 권장 다음 액션 → 맺음말. 마지막 줄은 반드시 정확히 '경영지원 아마존/틱톡샵 운영팀 드림' 한 줄로 끝낼 것('운영팀 드림' 등 다른 표기 금지). 사내 공유용 존댓말·간결한 톤. 데이터에 없는 수치는 쓰지 말 것."
+        "plain text만 — Markdown 금지(**, __, #, 코드블록 없음). 블록 사이 빈 줄, 구역 제목은 [플랫폼·정책 동향] 형식, 본문은 '- ' 불릿·하위는 '  - ' 들여쓰기, 액션은 1. 2. 번호. 순서: 인사 → 한 줄 핵심 요약 → [플랫폼·정책 동향] → (데이터 있으면) [리뷰·VOC 요약] → [제안 액션] → 감사 인사 한 줄 → 마지막 줄만 정확히 '경영지원 아마존/틱톡샵 운영팀 드림'. 존댓말·간결. 근거 없는 수치 금지."
       ),
   });
 }
@@ -92,13 +92,38 @@ export async function POST(req: Request) {
 
   const context = dataParts.join("\n\n");
 
+  const systemKo = `이메일 본문은 반드시 일반 텍스트만. Markdown·슬랙 스타일 금지: ** 굵게, # 제목, 백틱 코드블록, 수평선(---) 장식 없음.
+가독성: 섹션 사이에 빈 줄 1줄. 한 불릿은 한 줄에 핵심만(너무 길면 하위 불릿으로 쪼갬).
+고정 틀(이 순서·형식을 지킬 것):
+1) 인사 한 줄
+2) 빈 줄
+3) 오늘 브리핑 핵심 한 줄
+4) 빈 줄
+5) 첫 줄에 정확히 "[플랫폼·정책 동향]" (대괄호 포함)만 쓰고 다음 줄부터 "- " 불릿. 세부는 "  - " 두 칸 들여쓰기
+6) 리뷰 데이터가 있으면 빈 줄 후 "[리뷰·VOC 요약]" 한 줄, 다음 줄부터 "- " 불릿 (채널·제품명은 짧게)
+7) 빈 줄 후 "[제안 액션]" 한 줄, 다음 줄부터 "1. " "2. " 번호 목록(3~5개 내)
+8) 빈 줄 후 "감사합니다." 한 줄
+9) 빈 줄 후 마지막 줄만 서명: 경영지원 아마존/틱톡샵 운영팀 드림`;
+
+  const systemEn = `Email body must be plain text only. No Markdown: no **, #, code fences, or decorative --- lines.
+Readability: one blank line between sections. One bullet = one line; split long points with indented sub-bullets "  - ".
+Fixed structure (follow this order):
+1) One-line greeting (e.g. Hello team,)
+2) blank line
+3) One-line executive summary of today's pulse
+4) blank line
+5) Section title line exactly "[Platform & policy updates]" then "- " bullets; use "  - " for sub-points
+6) If review data exists: blank line, section title "[Review highlights]", then "- " bullets (keep product/channel names short)
+7) blank line, section title "[Recommended actions]", then numbered "1. " "2. " (3–5 items)
+8) blank line, one short closing (e.g. Thank you.)
+9) blank line, then exactly two lines: Best regards, / Corporate Support — Amazon/TikTok Shop Operations Team`;
+
   const promptKo = `당신은 K-Beauty 글로벌 이커머스 아마존/틱톡샵 운영팀 담당자입니다. 아래 블록은 서버가 방금 Apify 리뷰 Dataset과 RSS→정책 파이프라인으로 가져온 실제 데이터입니다.
 
-규칙:
+내용 규칙:
 - 데이터에 없는 수치·사실을 지어내지 마세요.
 - 정책·뉴스는 반드시 아래 [정책·뉴스] 구간에 나온 항목만 근거로 요약하세요.
-- 아마존/틱톡샵 운영팀이 사내 타 부서에 공유하는 '플랫폼 동향 브리핑 메일' 초안을 작성하세요.
-- 본문 맺음말(서명)은 마지막 줄에 정확히 다음 문구만 사용: 경영지원 아마존/틱톡샵 운영팀 드림 (앞에 '운영팀 드림' 등 다른 팀 서명을 쓰지 말 것).
+- 사내 타 부서 공유용 '플랫폼 동향 브리핑' 메일 초안입니다. 톤은 존댓말·간결.
 
 --- 데이터 시작 ---
 ${context}
@@ -106,11 +131,10 @@ ${context}
 
   const promptEn = `You are on the K-Beauty global e-commerce ops team. The block below is real data from Apify review Dataset and RSS→policy pipeline.
 
-Rules:
+Content rules:
 - Do not invent numbers or facts not in the data.
 - Policy/news bullets must only reflect items in the [정책·뉴스] / policy section below.
-- Write an internal email draft for cross-functional sharing (CS, marketing, leadership): same-day platform pulse for Amazon FR/UK and relevant marketplace signals.
-- Close the body with exactly: Best regards, (line break) Corporate Support — Amazon/TikTok Shop Operations Team. Do not use a generic "Operations team" sign-off only.
+- Internal email for CS, marketing, leadership: same-day platform pulse for Amazon FR/UK and relevant marketplace signals.
 
 --- Data start ---
 ${context}
@@ -120,6 +144,7 @@ ${context}
     const { object } = await generateObject({
       model: openai("gpt-4o"),
       schema: emailDraftSchema(locale),
+      system: locale === "en" ? systemEn : systemKo,
       prompt: locale === "en" ? promptEn : promptKo,
     });
 

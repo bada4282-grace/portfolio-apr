@@ -558,6 +558,27 @@ export function aggregateByChannel(items: ReviewItem[]): ReviewSummary[] {
 }
 
 /**
+ * 제품 상세(국가·SKU 선택) 모드용 — 리스트 국가 pill과 동일하게 `selectedChannel` 한 축에만 집계.
+ * (원문 언어·URL 추론으로 r.channel이 UK로 잡혀도, 사용자가 고른 마켓 기준으로 차트를 맞춤)
+ */
+export function aggregateBySelectedChannel(
+  items: ReviewItem[],
+  selectedChannel: ChannelKey
+): ReviewSummary[] {
+  const label = CHANNELS[selectedChannel].label;
+  const row: ReviewSummary = {
+    country: label,
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+  };
+  for (const item of items) {
+    row[item.sentiment] += 1;
+  }
+  return [row];
+}
+
+/**
  * Junglee 액터는 reviewUrl을 amazon.com으로 두는 경우가 많고, EU 프록시 시 amazon.fr 링크만 오기도 함.
  * reviewedIn 문구로 실제 구매/작성 마켓을 구분한다.
  */
