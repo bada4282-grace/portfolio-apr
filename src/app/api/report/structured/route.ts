@@ -60,9 +60,12 @@ function buildChartData(rev: ReviewsSnapshot): ChartDataPoint[] {
   }));
 }
 
-function policiesToNewsItems(policies: PolicyItem[]): NewsItem[] {
+function policiesToNewsItems(
+  policies: PolicyItem[],
+  locale: "ko" | "en"
+): NewsItem[] {
   return policies.slice(0, 24).map((p) => ({
-    title: p.title,
+    title: locale === "en" ? p.rssTitle : p.title,
     link: p.source_url && p.source_url.length > 0 ? p.source_url : "#",
     pubDate: p.date,
     source: p.platform,
@@ -127,7 +130,7 @@ export async function POST(req: Request) {
   }
 
   const chartData = buildChartData(rev);
-  const newsItems = policiesToNewsItems(policies);
+  const newsItems = policiesToNewsItems(policies, locale);
   const context = dataParts.join("\n\n");
 
   const langRule =

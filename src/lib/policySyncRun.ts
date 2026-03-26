@@ -41,7 +41,10 @@ const ClassifySchema = z.object({
 
 export interface PolicyItem {
   id: string;
+  /** 한국어(DeepL/OpenAI) — 정책 카드·한국어 리포트용 */
   title: string;
+  /** RSS 원문 제목 — 영어 리포트·원문 표시용 */
+  rssTitle: string;
   platform: string;
   channel: "amazon" | "tiktok" | "general";
   date: string;
@@ -123,6 +126,7 @@ export async function runPolicySyncPipeline(): Promise<PolicySyncResult> {
 
   const policyChunks = await mapPool(relevant, translateConcurrency, async (r, idx) => {
     const { entry, classification } = r.value;
+    const rawTitle = entry.title.trim();
     const { title, summary } = await resolveKoreanPolicyText(
       entry.title,
       entry.content
@@ -130,6 +134,7 @@ export async function runPolicySyncPipeline(): Promise<PolicySyncResult> {
     return {
       id: `${Date.now()}-${idx}`,
       title,
+      rssTitle: rawTitle || title,
       platform: entry.source.platform,
       channel: classification.channel,
       date: new Date(entry.pubDate).toISOString().split("T")[0],
