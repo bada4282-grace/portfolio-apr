@@ -143,7 +143,7 @@ export default function ReportPage() {
   return (
     <div className="bg-zinc-50">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-8 rounded-[10px] border border-[#e5e7eb] bg-white p-8">
+        <div className="report-no-print mb-8 rounded-[10px] border border-[#e5e7eb] bg-white p-8">
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2.5">
             <FileText
               className="col-start-1 row-span-2 h-6 w-6 shrink-0 self-start text-zinc-400"
@@ -162,7 +162,7 @@ export default function ReportPage() {
         </div>
 
         {flow === "pick" ? (
-          <div className="mb-10 grid gap-4 sm:grid-cols-2">
+          <div className="report-no-print mb-10 grid gap-4 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setFlow("email")}
@@ -203,48 +203,53 @@ export default function ReportPage() {
           </div>
         ) : (
           <div className="mb-8 space-y-6">
-            <button
-              type="button"
-              onClick={goPick}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900"
-            >
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-              {isKo ? "유형 다시 선택" : "Change workflow"}
-            </button>
+            <div className="report-no-print space-y-6">
+              <button
+                type="button"
+                onClick={goPick}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+                {isKo ? "유형 다시 선택" : "Change workflow"}
+              </button>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium text-zinc-700">{isKo ? "언어" : "Language"}</span>
-              <div className="flex rounded-full border border-[#e5e7eb] bg-white p-1">
-                <button
-                  type="button"
-                  onClick={() => setLocale("ko")}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    locale === "ko"
-                      ? "bg-[#ea0029] text-white"
-                      : "text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                >
-                  한국어
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocale("en")}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    locale === "en"
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-600 hover:bg-zinc-50"
-                  }`}
-                >
-                  English
-                </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-zinc-700">{isKo ? "언어" : "Language"}</span>
+                <div className="flex rounded-full border border-[#e5e7eb] bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => setLocale("ko")}
+                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                      locale === "ko"
+                        ? "bg-[#ea0029] text-white"
+                        : "text-zinc-600 hover:bg-zinc-50"
+                    }`}
+                  >
+                    한국어
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLocale("en")}
+                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                      locale === "en"
+                        ? "bg-zinc-900 text-white"
+                        : "text-zinc-600 hover:bg-zinc-50"
+                    }`}
+                  >
+                    English
+                  </button>
+                </div>
               </div>
             </div>
 
             {flow === "email" ? (
-              <EmailDraftComposer key={`draft-${locale}`} locale={locale} />
+              <div className="report-no-print">
+                <EmailDraftComposer key={`draft-${locale}`} locale={locale} />
+              </div>
             ) : (
-              <div className="space-y-4">
-                <div className="rounded-[10px] border border-[#e5e7eb] bg-white p-4">
+              <>
+                <div className="report-no-print space-y-4">
+                  <div className="rounded-[10px] border border-[#e5e7eb] bg-white p-4">
                   <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <p className="text-sm font-medium text-zinc-800">
                       {isKo
@@ -293,6 +298,11 @@ export default function ReportPage() {
                       PDF 다운로드
                     </button>
                   </div>
+                  <p className="report-no-print mt-2 text-xs text-zinc-500">
+                    {isKo
+                      ? "PDF 저장 시 «머리글/바닥글» 끄기, «배율»은 100%·«여백» 최소로 설정 — 화면 미리보기와 같은 비율로 인쇄됩니다."
+                      : "When saving to PDF, turn off «Headers and footers», set «Scale» to 100% and «Margins» to minimum — print matches the on-screen preview ratio."}
+                  </p>
                   {reportError ? (
                     <p className="mt-3 text-sm text-red-600">{reportError}</p>
                   ) : null}
@@ -312,20 +322,25 @@ export default function ReportPage() {
                         : structuredMeta.policyItemsUsed}
                     </p>
                   ) : null}
+                  </div>
+
+                  {reportLoading ? <StructuredReportSkeleton /> : null}
                 </div>
 
-                {reportLoading ? <StructuredReportSkeleton /> : null}
                 {structuredReport ? (
-                  <div id="printable-structured-report">
+                  <div
+                    id="printable-structured-report"
+                    className="rounded-[10px] py-2 print:rounded-none print:py-0"
+                  >
                     <StructuredReportView report={structuredReport} locale={locale} />
                   </div>
                 ) : null}
-              </div>
+              </>
             )}
           </div>
         )}
 
-        <details className="mb-6 rounded-[10px] border border-[#e5e7eb] bg-white">
+        <details className="report-no-print mb-6 rounded-[10px] border border-[#e5e7eb] bg-white">
           <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-zinc-800">
             {isKo ? "채팅으로 추가 질문 (선택) — 리뷰·정책 도구 연동" : "Optional chat — review & policy tools"}
           </summary>
@@ -421,21 +436,47 @@ export default function ReportPage() {
 
       <style>{`
         @media print {
-          body * {
-            visibility: hidden !important;
+          @page {
+            size: A4 portrait;
+            margin: 12mm;
           }
-
-          #printable-structured-report,
-          #printable-structured-report * {
-            visibility: visible !important;
+          html,
+          body {
+            background: #fff !important;
+            height: auto !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
-
+          body > header {
+            display: none !important;
+          }
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #fff !important;
+          }
+          .report-no-print {
+            display: none !important;
+          }
+          .bg-zinc-50 {
+            background: #fff !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+          }
+          .mx-auto.max-w-7xl {
+            max-width: none !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+          }
           #printable-structured-report {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white;
+            position: static !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
       `}</style>

@@ -1,68 +1,92 @@
 "use client";
 
-import type { NewsItem, ReportData } from "@/types/report";
-import { PlatformBarChart } from "@/components/report/PlatformBarChart";
+import type { ReportData } from "@/types/report";
 
 function TrendIcon({ dir }: { dir: "up" | "down" | "stable" }) {
-  if (dir === "up")
-    return <span className="text-[11px] font-semibold text-[#1a1a1a]">↑</span>;
-  if (dir === "down")
-    return <span className="text-[11px] font-semibold text-[#888888]">↓</span>;
-  return <span className="text-[11px] font-semibold text-[#aaaaaa]">→</span>;
+  if (dir === "up") return <span style={{ color: "#E8192C" }}>▲</span>;
+  if (dir === "down") return <span style={{ color: "#888" }}>▼</span>;
+  return <span style={{ color: "#aaa" }}>—</span>;
 }
 
-function Skeleton() {
-  const widths = [80, 60, 90, 50, 70];
+function InlineBarChart({
+  data,
+  title,
+}: {
+  data: { label: string; value: number }[];
+  title: string;
+}) {
+  if (!data.length) {
+    return <p className="sr-no-chart sr-chart-body">데이터 없음</p>;
+  }
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const barMaxPx = 48;
   return (
-    <div className="flex flex-col gap-2.5 py-6">
-      {widths.map((w, i) => (
-        <div
-          key={i}
-          className="h-3 animate-pulse rounded-sm bg-gradient-to-r from-[#f4f1ee] via-[#e2ddd8] to-[#f4f1ee] bg-[length:200%_100%]"
-          style={{ width: `${w}%`, animationDelay: `${i * 0.1}s` }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function NewsTicker({ items }: { items: NewsItem[] }) {
-  if (!items.length) return null;
-  const text = items.map((n) => `${n.source.toUpperCase()} · ${n.title}`).join("    /    ");
-  return (
-    <div className="flex h-8 items-center overflow-hidden bg-[#1a1a1a] text-[10px] tracking-wide text-white/80">
-      <span className="flex h-full shrink-0 items-center bg-[#c9a96e] px-3.5 text-[9px] font-medium tracking-[0.14em] text-[#1a1a1a]">
-        LIVE
-      </span>
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <span
-          className="inline-block whitespace-nowrap pl-2"
-          style={{
-            animation: "reportTicker 40s linear infinite",
-          }}
-        >
-          {text}
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-          {text}
-        </span>
+    <div className="sr-chart-body">
+      <div className="sr-bar-wrap">
+        {data.map((d, i) => (
+          <div key={i} className="sr-bar-col">
+            <span className="sr-bar-v">{d.value}</span>
+            <div
+              className={`sr-bar-b${d.value === max ? " sr-bar-b-hi" : ""}`}
+              style={{ height: `${(d.value / max) * barMaxPx}px` }}
+            />
+            <span className="sr-bar-l">{d.label}</span>
+          </div>
+        ))}
       </div>
-      <style>{`
-        @keyframes reportTicker {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-      `}</style>
+      <p className="sr-chart-title-label">{title}</p>
     </div>
   );
 }
 
 export function StructuredReportSkeleton() {
   return (
-    <div className="border border-[#e2ddd8] bg-[#fafaf8] px-6 py-10">
-      <p className="mb-4 text-[10px] uppercase tracking-[0.18em] text-[#b5ada4]">
-        Generating Report
-      </p>
-      <Skeleton />
+    <div className="sr-outer">
+      <div className="sr-a4">
+        <div className="sr-sidebar" aria-hidden>
+          <span className="sr-sidebar-logo">K-Beauty Report</span>
+          <div className="sr-sidebar-line" />
+        </div>
+        <div className="sr-content">
+          <div className="sr-skel-head">
+            <div className="sr-skel-line sr-skel-w40" />
+            <div className="sr-skel-line sr-skel-w70" />
+            <div className="sr-skel-rule" />
+          </div>
+          <div className="sr-grid">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="sr-skel-block">
+                <div className="sr-skel-line sr-skel-w50" />
+                <div className="sr-skel-line" />
+                <div className="sr-skel-line" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <style>{`
+        .sr-outer { display: flex; justify-content: center; padding: 24px; }
+        .sr-a4 {
+          width: 794px; min-height: 1123px; background: #fff; display: flex;
+          box-shadow: 0 4px 40px rgba(0,0,0,0.1);
+        }
+        .sr-sidebar {
+          width: 48px; background: #E8192C; flex-shrink: 0;
+          display: flex; flex-direction: column; align-items: center; padding: 24px 0;
+        }
+        .sr-sidebar-logo { font-size: 9px; color: rgba(255,255,255,0.5); writing-mode: vertical-rl; transform: rotate(180deg); }
+        .sr-sidebar-line { width: 1px; flex: 1; background: rgba(255,255,255,0.2); margin: 12px 0; }
+        .sr-content { flex: 1; padding: 28px; }
+        .sr-skel-head { margin-bottom: 16px; }
+        .sr-skel-line { height: 8px; border-radius: 2px; background: linear-gradient(90deg,#eee,#f5f5f5,#eee); margin-bottom: 8px; animation: sr-pulse 1.2s ease-in-out infinite; }
+        .sr-skel-w40 { width: 40%; }
+        .sr-skel-w50 { width: 50%; }
+        .sr-skel-w70 { width: 70%; height: 20px; }
+        .sr-skel-rule { height: 2px; background: #eee; margin-top: 12px; }
+        .sr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .sr-skel-block { min-height: 80px; }
+        @keyframes sr-pulse { 50% { opacity: 0.65; } }
+      `}</style>
     </div>
   );
 }
@@ -75,190 +99,428 @@ export function StructuredReportView({
   locale?: "ko" | "en";
 }) {
   const isEn = locale === "en";
-  const dateStr = new Date(report.generatedAt).toLocaleString(
+  const dateStr = new Date(report.generatedAt).toLocaleDateString(
     isEn ? "en-GB" : "ko-KR",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }
+    { year: "numeric", month: "long", day: "numeric" }
   );
+  const yearStr = String(new Date(report.generatedAt).getFullYear());
+
+  const l = {
+    exec: isEn ? "Executive Summary" : "Executive Summary",
+    trends: isEn ? "Market trends" : "시장 트렌드",
+    players: isEn ? "Key players" : "주요 플레이어",
+    viz: isEn ? "Data visualization" : "데이터 시각화",
+    outlook: isEn ? "Outlook & insights" : "전망 및 인사이트",
+    news: isEn ? "Latest news" : "최신 뉴스",
+    metaAi: isEn ? "AI Generated" : "AI Generated",
+    metaRss: isEn
+      ? (report.newsItems?.length ? `RSS ${report.newsItems.length} items` : "Latest data")
+      : report.newsItems?.length
+        ? `RSS ${report.newsItems.length}건 반영`
+        : "최신 데이터 기반",
+    footAi: isEn ? "This report was generated by AI." : "본 리포트는 AI에 의해 자동 생성되었습니다",
+    newsEmpty: isEn ? "No RSS items in this run." : "이번 생성에 포함된 뉴스가 없습니다.",
+    thKw: isEn ? "Keyword" : "키워드",
+    thDir: isEn ? "Dir" : "방향",
+    thIn: isEn ? "Insight" : "인사이트",
+    thCo: isEn ? "Company" : "기업",
+    thMv: isEn ? "Movement" : "최근 동향",
+    thSig: isEn ? "Significance" : "의미",
+  };
 
   return (
-    <div className="border border-[#e2ddd8] bg-[#fafaf8] text-[#2c2825]">
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-[#e2ddd8] bg-[#fafaf8] px-6 sm:px-12">
-        <span className="font-serif text-lg font-normal uppercase tracking-[0.18em] text-[#1a1a1a]">
-          Platform Report
-        </span>
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[#b5ada4]">
-          K-Beauty Intelligence
-        </span>
-      </header>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        .structured-a4-report {
+          background: #f0f0f0;
+          --sr-red: #E8192C;
+          --sr-red-dark: #c0121f;
+          --sr-text: #1e1e1e;
+          --sr-muted: #777;
+          --sr-line: #ddd;
+          --sr-bg: #f0f0f0;
+          --sr-white: #ffffff;
+          font-family: 'Noto Sans KR', sans-serif;
+          font-weight: 300;
+          color: var(--sr-text);
+          -webkit-font-smoothing: antialiased;
+          /* 한글·CJK: 단어/어절 중간 줄바꿈 방지, 긴 URL 등만 필요 시 줄바꿈 */
+          word-break: keep-all;
+          overflow-wrap: break-word;
+          line-break: strict;
+        }
+        .structured-a4-report * { box-sizing: border-box; }
+        .sr-outer {
+          display: flex; justify-content: center;
+          padding: 32px 16px 48px;
+        }
+        .sr-a4 {
+          width: 794px;
+          min-height: 1123px;
+          max-width: 100%;
+          background: var(--sr-white);
+          display: flex;
+          box-shadow: 0 4px 40px rgba(0,0,0,0.12);
+          position: relative;
+        }
+        .sr-sidebar {
+          width: 48px;
+          background: var(--sr-red);
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 24px 0 20px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .sr-sidebar-logo {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          transform: rotate(180deg);
+          font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em;
+          color: rgba(255,255,255,0.92); text-transform: uppercase;
+          white-space: nowrap; margin-top: 10px;
+        }
+        .sr-sidebar-line {
+          width: 1px; flex: 1; background: rgba(255,255,255,0.22);
+          margin: 18px 0;
+        }
+        .sr-sidebar-sub {
+          writing-mode: vertical-rl;
+          transform: rotate(180deg);
+          font-size: 7.5px; color: rgba(255,255,255,0.45);
+          letter-spacing: 0.12em; white-space: nowrap;
+        }
+        .sr-content {
+          flex: 1;
+          min-width: 0;
+          padding: 24px 22px 16px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .sr-head { margin-bottom: 12px; }
+        .sr-eyebrow {
+          font-size: 9px; font-weight: 500; letter-spacing: 0.22em;
+          color: var(--sr-red); text-transform: uppercase; margin-bottom: 5px;
+        }
+        .sr-title {
+          font-size: 25px; font-weight: 700; line-height: 1.15;
+          color: var(--sr-text); margin-bottom: 6px;
+          word-break: keep-all;
+          overflow-wrap: break-word;
+        }
+        .sr-rule { height: 2px; background: var(--sr-text); margin-bottom: 6px; }
+        .sr-meta {
+          display: flex; flex-wrap: wrap; gap: 8px 14px;
+          font-size: 9px; color: var(--sr-muted); letter-spacing: 0.08em;
+        }
+        .sr-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 14px 18px;
+          flex: 1;
+        }
+        .sr-grid > section {
+          min-width: 0;
+        }
+        .sr-block-head {
+          display: flex; align-items: center; gap: 6px;
+          border-bottom: 1px solid var(--sr-text);
+          padding-bottom: 4px; margin-bottom: 8px;
+        }
+        .sr-bn { font-size: 9px; font-weight: 700; color: var(--sr-red); letter-spacing: 0.1em; }
+        .sr-bl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+        .sr-sum-text {
+          font-size: 11px; line-height: 1.75; color: #2a2a2a; margin-bottom: 8px;
+        }
+        .sr-find-list { display: flex; flex-direction: column; gap: 5px; }
+        .sr-find-row {
+          display: flex; gap: 8px; align-items: flex-start;
+          font-size: 10px; color: var(--sr-text); line-height: 1.65;
+        }
+        .sr-find-row > span {
+          flex: 1;
+          min-width: 0;
+          word-break: keep-all;
+          overflow-wrap: break-word;
+        }
+        .sr-find-dot {
+          width: 4px; height: 4px; background: var(--sr-red); border-radius: 50%;
+          flex-shrink: 0; margin-top: 4px;
+        }
+        .structured-a4-report table { width: 100%; border-collapse: collapse; }
+        .structured-a4-report thead th {
+          font-size: 8.5px; font-weight: 700; letter-spacing: 0.1em;
+          text-transform: uppercase; color: var(--sr-muted);
+          padding: 4px 5px; text-align: left;
+          border-bottom: 1px solid var(--sr-line);
+          background: #fafafa;
+        }
+        .structured-a4-report tbody td {
+          font-size: 10px; color: var(--sr-text);
+          padding: 5px 5px; border-bottom: 1px solid #f2f2f2;
+          line-height: 1.55; vertical-align: top;
+          word-break: keep-all;
+          overflow-wrap: break-word;
+        }
+        .structured-a4-report tbody tr:last-child td { border-bottom: none; }
+        .sr-td-kw  { font-weight: 500; }
+        .sr-td-dir { text-align: center; width: 28px; }
+        .sr-td-nm  { font-weight: 700; color: var(--sr-red); white-space: nowrap; }
+        /* 제목 구분선 아래로만 차트가 오도록 여백 + 고정 높이 제거(넘침 방지) */
+        .sr-chart-body {
+          margin-top: 2px;
+          padding-top: 10px;
+        }
+        .sr-bar-wrap {
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          gap: 8px;
+          min-height: 56px;
+          margin-bottom: 4px;
+        }
+        .sr-bar-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          flex: 1;
+          gap: 3px;
+          min-width: 0;
+        }
+        .sr-bar-v   { font-size: 8px; color: var(--sr-red); font-weight: 500; }
+        .sr-bar-b   { width: 100%; background: #ececec; min-height: 2px; }
+        .sr-bar-b-hi{ background: var(--sr-red) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .sr-bar-l   { font-size: 8px; color: var(--sr-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 100%; text-align: center; }
+        .sr-chart-title-label {
+          font-size: 8.5px; color: var(--sr-muted); margin-top: 4px; letter-spacing: 0.06em;
+          word-break: keep-all;
+        }
+        .sr-outlook-text { font-size: 10.5px; line-height: 1.75; color: #2a2a2a; }
+        .sr-iq {
+          margin-top: 6px;
+          border-left: 2px solid var(--sr-red);
+          padding: 6px 10px;
+          font-size: 10px; font-style: italic;
+          color: var(--sr-text); background: #fafafa; line-height: 1.6;
+          word-break: keep-all;
+          overflow-wrap: break-word;
+        }
+        .sr-news-row {
+          display: grid; grid-template-columns: 48px 1fr 46px;
+          gap: 6px; align-items: baseline;
+          padding: 3px 0; border-bottom: 1px solid #f2f2f2;
+        }
+        .sr-news-row:last-child { border-bottom: none; }
+        .sr-ns { font-size: 8px; font-weight: 700; color: var(--sr-red); text-transform: uppercase; letter-spacing: 0.05em; }
+        .sr-nt { font-size: 9px; color: var(--sr-text); line-height: 1.5; word-break: keep-all; overflow-wrap: break-word; }
+        .sr-nt a { color: inherit; text-decoration: none; }
+        .sr-nd { font-size: 8px; color: var(--sr-muted); text-align: right; white-space: nowrap; }
+        .sr-no-news, .sr-no-chart { font-size: 10px; color: var(--sr-muted); }
+        .sr-foot {
+          border-top: 1px solid var(--sr-line);
+          margin-top: 10px; padding-top: 6px;
+          display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+        }
+        .sr-rft-l { font-size: 8px; color: var(--sr-muted); letter-spacing: 0.1em; }
+        .sr-rft-r { display: flex; align-items: center; gap: 5px; font-size: 8px; color: var(--sr-muted); }
+        .sr-rft-dot { width: 3px; height: 3px; background: var(--sr-red); border-radius: 50%; }
+        /* 인쇄: 화면과 동일한 794×1123px 캔버스를 유지한 뒤 zoom으로 @page 안쪽(210mm−여백)에 맞춤 */
+        @media print {
+          .structured-a4-report {
+            background: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .structured-a4-report .sr-outer {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+          }
+          .structured-a4-report .sr-a4 {
+            box-shadow: none !important;
+            width: 794px !important;
+            max-width: none !important;
+            min-height: 1123px !important;
+            flex-shrink: 0 !important;
+            page-break-inside: avoid;
+            /* @page margin 12mm×2 → 가용 너비 186mm / 설계 기준 210mm ≈ 0.886 */
+            zoom: 0.886;
+          }
+        }
+      `}</style>
 
-      <main className="mx-auto max-w-[960px] px-5 py-12 pb-24 sm:px-6">
-        <article id="structured-report-anchor">
-          <div className="mb-14 border-b border-[#1a1a1a] pb-8">
-            <div className="mb-5 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-[#b5ada4]">
-              <span>Platform Trend Report</span>
-              <span className="h-1 w-1 shrink-0 rounded-full bg-[#c9a96e]" />
-              <span>K-Beauty</span>
-              <span className="h-1 w-1 shrink-0 rounded-full bg-[#c9a96e]" />
-              <span>AI Generated</span>
+      <div className="structured-a4-report" lang={isEn ? "en" : "ko"}>
+        <div className="sr-outer" id="structured-report-anchor">
+          <article className="sr-a4">
+            <div className="sr-sidebar" aria-hidden>
+              <span className="sr-sidebar-logo">K-Beauty Report</span>
+              <div className="sr-sidebar-line" />
+              <span className="sr-sidebar-sub">APR · {yearStr}</span>
             </div>
-            <h2 className="font-serif text-3xl font-light leading-tight text-[#1a1a1a] sm:text-4xl md:text-5xl">
-              {report.topic}
-            </h2>
-            <p className="mt-3 text-[11px] tracking-wide text-[#b5ada4]">
-              {isEn ? `Generated: ${dateStr}` : `${dateStr} 기준 생성`}
-            </p>
-          </div>
 
-          <div className="mb-14 border-l-2 border-[#1a1a1a] py-2 pl-6">
-            <p className="font-serif text-lg font-light italic leading-relaxed text-[#1a1a1a] sm:text-xl">
-              &ldquo;{report.insightQuote}&rdquo;
-            </p>
-          </div>
+            <div className="sr-content">
+              <header className="sr-head">
+                <p className="sr-eyebrow">Platform Trend Report · K-Beauty Intelligence</p>
+                <h1 className="sr-title">{report.topic}</h1>
+                <div className="sr-rule" />
+                <div className="sr-meta">
+                  <span>{dateStr} {isEn ? "" : "기준"}</span>
+                  <span>·</span>
+                  <span>{l.metaAi}</span>
+                  <span>·</span>
+                  <span>{l.metaRss}</span>
+                </div>
+              </header>
 
-          <section className="mb-16">
-            <div className="mb-7 flex items-baseline gap-4 border-b border-[#e2ddd8] pb-3">
-              <span className="font-serif text-[10px] text-[#b5ada4]">01</span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]">
-                Executive Summary
-              </span>
-            </div>
-            <p className="mb-7 text-[15px] font-light leading-[1.9]">{report.executiveSummary}</p>
-            <ul className="flex flex-col">
-              {report.keyFindings.map((f, i) => (
-                <li
-                  key={i}
-                  className="flex gap-4 border-b border-[#f4f1ee] py-3.5 text-[13px] leading-relaxed"
-                >
-                  <span className="w-5 shrink-0 font-serif text-[11px] text-[#b5ada4]">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="mb-16">
-            <div className="mb-7 flex items-baseline gap-4 border-b border-[#e2ddd8] pb-3">
-              <span className="font-serif text-[10px] text-[#b5ada4]">02</span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]">
-                {isEn ? "Market trends" : "시장 트렌드"}
-              </span>
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-px border border-[#e2ddd8] bg-[#e2ddd8]">
-              {report.trends.map((t, i) => (
-                <div key={i} className="bg-[#fafaf8] p-5">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-medium tracking-wide text-[#1a1a1a]">
-                      {t.keyword}
-                    </span>
-                    <TrendIcon dir={t.direction} />
+              <div className="sr-grid">
+                <section>
+                  <div className="sr-block-head">
+                    <span className="sr-bn">01</span>
+                    <span className="sr-bl">{l.exec}</span>
                   </div>
-                  <p className="text-[11px] leading-snug text-[#b5ada4]">{t.insight}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+                  <p className="sr-sum-text">{report.executiveSummary}</p>
+                  <div className="sr-find-list">
+                    {report.keyFindings.map((f, i) => (
+                      <div key={i} className="sr-find-row">
+                        <div className="sr-find-dot" />
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
 
-          <section className="mb-16">
-            <div className="mb-7 flex items-baseline gap-4 border-b border-[#e2ddd8] pb-3">
-              <span className="font-serif text-[10px] text-[#b5ada4]">03</span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]">
-                {isEn ? "Key players" : "주요 플레이어"}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              {report.players.map((p, i) => (
-                <div
-                  key={i}
-                  className="grid grid-cols-1 gap-2 border-b border-[#f4f1ee] py-4 sm:grid-cols-[160px_1fr_1fr] sm:gap-6"
-                >
-                  <span className="text-[13px] font-medium text-[#1a1a1a]">{p.name}</span>
-                  <span className="text-xs leading-relaxed text-[#2c2825]">{p.movement}</span>
-                  <span className="hidden text-[11px] leading-relaxed text-[#b5ada4] sm:block">
-                    {p.significance}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="mb-16">
-            <div className="mb-7 flex items-baseline gap-4 border-b border-[#e2ddd8] pb-3">
-              <span className="font-serif text-[10px] text-[#b5ada4]">04</span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]">
-                {isEn ? "Data visualization" : "데이터 시각화"}
-              </span>
-            </div>
-            <PlatformBarChart data={report.chartData} title={report.chartTitle} />
-          </section>
-
-          <section className="mb-16">
-            <div className="mb-7 flex items-baseline gap-4 border-b border-[#e2ddd8] pb-3">
-              <span className="font-serif text-[10px] text-[#b5ada4]">05</span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]">
-                {isEn ? "Outlook & insights" : "전망 및 인사이트"}
-              </span>
-            </div>
-            <p className="text-sm font-light leading-[1.9]">{report.outlook}</p>
-          </section>
-
-          {report.newsItems.length > 0 ? (
-            <section className="mb-16">
-              <div className="mb-7 flex items-baseline gap-4 border-b border-[#e2ddd8] pb-3">
-                <span className="font-serif text-[10px] text-[#b5ada4]">06</span>
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#1a1a1a]">
-                  {isEn ? "Latest news" : "최신 뉴스"}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                {report.newsItems.map((n, i) => (
-                  <div
-                    key={i}
-                    className="flex flex-col gap-1 border-b border-[#f4f1ee] py-4 sm:flex-row sm:items-baseline sm:gap-5"
-                  >
-                    <span className="w-20 shrink-0 text-[9px] font-medium uppercase tracking-[0.12em] text-[#b5ada4]">
-                      {n.source}
-                    </span>
-                    <span className="min-w-0 flex-1 text-[13px] leading-snug">
-                      {n.link && n.link !== "#" ? (
-                        <a
-                          href={n.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-inherit hover:text-[#1a1a1a]"
-                        >
-                          {n.title}
-                        </a>
+                <section>
+                  <div className="sr-block-head">
+                    <span className="sr-bn">02</span>
+                    <span className="sr-bl">{l.trends}</span>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{l.thKw}</th>
+                        <th className="sr-td-dir">{l.thDir}</th>
+                        <th>{l.thIn}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.trends.length ? (
+                        report.trends.map((t, i) => (
+                          <tr key={i}>
+                            <td className="sr-td-kw">{t.keyword}</td>
+                            <td className="sr-td-dir">
+                              <TrendIcon dir={t.direction} />
+                            </td>
+                            <td>{t.insight}</td>
+                          </tr>
+                        ))
                       ) : (
-                        n.title
+                        <tr>
+                          <td colSpan={3} className="sr-no-chart">
+                            —
+                          </td>
+                        </tr>
                       )}
-                    </span>
-                    <span className="shrink-0 whitespace-nowrap text-[10px] text-[#b5ada4]">
-                      {n.pubDate}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : null}
+                    </tbody>
+                  </table>
+                </section>
 
-          <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-[#e2ddd8] pt-6">
-            <span className="font-serif text-[13px] tracking-wide text-[#b5ada4]">
-              Platform Report · K-Beauty
-            </span>
-            <span className="text-[10px] tracking-wide text-[#b5ada4]">
-              {isEn ? "This report was generated by AI." : "본 리포트는 AI에 의해 자동 생성되었습니다"}
-            </span>
-          </footer>
-        </article>
-      </main>
-    </div>
+                <section>
+                  <div className="sr-block-head">
+                    <span className="sr-bn">03</span>
+                    <span className="sr-bl">{l.players}</span>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{l.thCo}</th>
+                        <th>{l.thMv}</th>
+                        <th>{l.thSig}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.players.length ? (
+                        report.players.map((p, i) => (
+                          <tr key={i}>
+                            <td className="sr-td-nm">{p.name}</td>
+                            <td>{p.movement}</td>
+                            <td>{p.significance}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="sr-no-chart">
+                            —
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </section>
+
+                <section>
+                  <div className="sr-block-head">
+                    <span className="sr-bn">04</span>
+                    <span className="sr-bl">{l.viz}</span>
+                  </div>
+                  <InlineBarChart data={report.chartData} title={report.chartTitle} />
+                </section>
+
+                <section>
+                  <div className="sr-block-head">
+                    <span className="sr-bn">05</span>
+                    <span className="sr-bl">{l.outlook}</span>
+                  </div>
+                  <p className="sr-outlook-text">{report.outlook}</p>
+                  <div className="sr-iq">&ldquo;{report.insightQuote}&rdquo;</div>
+                </section>
+
+                <section>
+                  <div className="sr-block-head">
+                    <span className="sr-bn">06</span>
+                    <span className="sr-bl">{l.news}</span>
+                  </div>
+                  {report.newsItems?.length ? (
+                    report.newsItems.slice(0, 6).map((n, i) => (
+                      <div key={i} className="sr-news-row">
+                        <span className="sr-ns">{n.source}</span>
+                        <span className="sr-nt">
+                          {n.link && n.link !== "#" ? (
+                            <a href={n.link} target="_blank" rel="noopener noreferrer">
+                              {n.title}
+                            </a>
+                          ) : (
+                            n.title
+                          )}
+                        </span>
+                        <span className="sr-nd">{n.pubDate}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="sr-no-news">{l.newsEmpty}</p>
+                  )}
+                </section>
+              </div>
+
+              <footer className="sr-foot">
+                <span className="sr-rft-l">Platform Report · K-Beauty Intelligence · APR</span>
+                <span className="sr-rft-r">
+                  <span>{l.footAi}</span>
+                  <span className="sr-rft-dot" aria-hidden />
+                  <span>{dateStr}</span>
+                </span>
+              </footer>
+            </div>
+          </article>
+        </div>
+      </div>
+    </>
   );
 }
