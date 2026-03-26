@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { LayoutChrome } from "@/components/LayoutChrome";
+import Navbar from "@/components/Navbar";
 import "./globals.css";
 import faviconPng from "./favicon.png";
 
@@ -30,7 +30,8 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white">
-        <LayoutChrome>{children}</LayoutChrome>
+        <Navbar />
+        <main className="flex-1">{children}</main>
       </body>
     </html>
   );

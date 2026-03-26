@@ -121,26 +121,15 @@ export default function ReportPage() {
     if (!structuredReport) return;
     setReportError(null);
     setPdfLoading(true);
-    try {
-      sessionStorage.setItem("structuredReportForPrint", JSON.stringify(structuredReport));
-      sessionStorage.setItem("structuredReportPrintLocale", locale);
-      const w = window.open("/report/print", "_blank", "noopener,noreferrer");
-      if (!w) {
-        setReportError(
-          locale === "ko"
-            ? "팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도해 주세요."
-            : "Popup blocked. Allow popups and try again."
-        );
-        setPdfLoading(false);
-        return;
-      }
-    } catch {
-      setReportError(locale === "ko" ? "PDF 창을 열 수 없습니다." : "Could not open print window.");
+
+    const onAfterPrint = () => {
       setPdfLoading(false);
-      return;
-    }
-    window.setTimeout(() => setPdfLoading(false), 1200);
-  }, [structuredReport, locale]);
+      window.removeEventListener("afterprint", onAfterPrint);
+    };
+
+    window.addEventListener("afterprint", onAfterPrint);
+    window.print();
+  }, [structuredReport]);
 
   const goPick = () => {
     setFlow("pick");
@@ -311,8 +300,8 @@ export default function ReportPage() {
                   </div>
                   <p className="report-no-print mt-2 text-xs text-zinc-500">
                     {isKo
-                      ? "«PDF 다운로드»는 인쇄 전용 탭이 열립니다. PDF 저장 시 «머리글/바닥글» 끄기, «배율»은 100%·«여백» 최소로 설정 — 화면 미리보기와 같은 비율로 인쇄됩니다."
-                      : "«PDF download» opens a print-only tab. When saving to PDF, turn off «Headers and footers», set «Scale» to 100% and «Margins» to minimum — print matches the on-screen preview ratio."}
+                      ? "PDF 저장 시 «머리글/바닥글» 끄기, «배율»은 100%·«여백» 최소로 설정 — 화면 미리보기와 같은 비율로 인쇄됩니다."
+                      : "When saving to PDF, turn off «Headers and footers», set «Scale» to 100% and «Margins» to minimum — print matches the on-screen preview ratio."}
                   </p>
                   {reportError ? (
                     <p className="mt-3 text-sm text-red-600">{reportError}</p>
