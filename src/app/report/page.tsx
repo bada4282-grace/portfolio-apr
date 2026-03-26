@@ -447,8 +447,23 @@ export default function ReportPage() {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          body > header {
+          /* body 다음 형제로 붙는 확장 UI(제미나이 FAB 등). head는 건드리지 않음 */
+          body ~ * {
             display: none !important;
+          }
+          body > *:not(main) {
+            display: none !important;
+          }
+          /*
+            main 내부에 주입된 고정 오버레이는 visibility로 차단.
+            자손은 부모가 hidden이어도 visible 지정 가능 → 리포트 블록만 표시.
+          */
+          main * {
+            visibility: hidden !important;
+          }
+          #printable-structured-report,
+          #printable-structured-report * {
+            visibility: visible !important;
           }
           main {
             padding: 0 !important;
