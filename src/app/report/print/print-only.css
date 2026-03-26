@@ -1,0 +1,54 @@
+/* 인쇄 전용 페이지: 리포트 블록만 인쇄, 확장 FAB(제미나이 등) 차단 */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body ~ * {
+    display: none !important;
+  }
+
+  body > *:not(main) {
+    display: none !important;
+  }
+
+  /* main 안에 확장이 붙은 경우: 리포트 루트 외 제거 */
+  main > *:not(#printable-structured-report) {
+    display: none !important;
+  }
+
+  main * {
+    visibility: hidden !important;
+  }
+
+  #printable-structured-report,
+  #printable-structured-report * {
+    visibility: visible !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  #printable-structured-report {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
