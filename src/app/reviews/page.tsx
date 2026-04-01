@@ -620,7 +620,7 @@ export default function ReviewsPage() {
                 <p className="mb-4 text-xs text-gray-400">
                   {isProductDetailMode
                     ? productPreviewLoading
-                      ? "선택한 제품 ASIN으로 Apify를 다시 실행하는 중입니다…"
+                      ? "선택한 제품으로 리뷰를 수집하는 중입니다…"
                       : productPreviewError
                         ? "차트를 표시할 수 없습니다."
                         : `이번 실행으로 수집된 ${chartCaptionTotal.toLocaleString()}건 기준 (아래 감성 필터 반영)`
