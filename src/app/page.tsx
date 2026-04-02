@@ -31,26 +31,32 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-      {/* 히어로 영역 — 연한 배경 */}
-      <section className="bg-zinc-50 px-4 pb-20 pt-16 text-center sm:px-6 lg:px-8">
-        {/* 실시간 뱃지 — 점 색은 apr_logo.svg 메인 레드(#ea0029)와 동일 */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-sm font-medium text-zinc-800">
-          <span
-            className="h-2 w-2 shrink-0 rounded-full bg-[#ea0029]"
-            aria-hidden
-          />
-          실시간 모니터링
-        </div>
+      {/* 히어로 영역 — 배경 이미지는 별도 레이어로 opacity 70% (텍스트는 선명 유지) */}
+      <section className="relative min-h-[min(42vh,420px)] overflow-hidden bg-zinc-50 px-4 pb-20 pt-16 text-center sm:px-6 lg:px-8">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[url('/Medicube-banner.png')] bg-cover bg-left bg-no-repeat opacity-70"
+          aria-hidden
+        />
+        <div className="relative z-10">
+          {/* 실시간 뱃지 — 점 색은 apr_logo.svg 메인 레드(#ea0029)와 동일 */}
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-sm font-medium text-zinc-800">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-[#ea0029]"
+              aria-hidden
+            />
+            실시간 모니터링
+          </div>
 
-        {/* 히어로 제목 — Inter 계열(sans), 5xl·semibold·#111·tight·mb-6·line-height 1 */}
-        <h1 className="mb-6 font-sans text-5xl font-semibold leading-none tracking-tight text-[#111111]">
-          에이피알 인텔리전스 대시보드
-        </h1>
-        {/* \n 줄바꿈 표시를 위해 whitespace-pre-line */}
-        <p className="mx-auto max-w-xl whitespace-pre-line text-base leading-relaxed text-zinc-500">
-          {`글로벌 이커머스 플랫폼 운영지원 담당자를 위한 올인원 대시보드.
+          {/* 히어로 제목 — Inter 계열(sans), 5xl·semibold·#111·tight·mb-6·line-height 1 */}
+          <h1 className="mb-6 font-sans text-5xl font-semibold leading-none tracking-tight text-[#111111]">
+            에이피알 인텔리전스 대시보드
+          </h1>
+          {/* \n 줄바꿈 표시를 위해 whitespace-pre-line */}
+          <p className="mx-auto max-w-xl whitespace-pre-line text-base leading-relaxed text-zinc-500">
+            {`글로벌 이커머스 플랫폼 운영지원 담당자를 위한 올인원 대시보드.
 정책 변경 모니터링 · 유럽 VOC 분석 · AI 리포트를 한 곳에서 관리하세요`}
-        </p>
+          </p>
+        </div>
       </section>
 
       {/* 카드 섹션 */}
